@@ -21,12 +21,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModelProvider
 import com.example.android_iot_app_deel_2.ui.theme.Android_IoT_App_Deel_2Theme
 import java.io.Console
 
 class MainActivity : ComponentActivity() {
+
+    lateinit var viewModel: MainViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+
         setContent {
             Android_IoT_App_Deel_2Theme {
                 // A surface container using the 'background' color from the theme
@@ -35,7 +41,10 @@ class MainActivity : ComponentActivity() {
                     //color = MaterialTheme.colorScheme.background
                 ) {
                     Column {
-                        Lamp(true, { Log.d("Change lamp 1",if(it) "on" else "off") })
+                        Lamp(viewModel.lamp1_on.value, {
+                             viewModel.setLamp1On(it)
+                             Log.d("Change lamp 1",if(it) "on" else "off")
+                        })
                         Lamp()
                         Lamp()
                     }
@@ -52,7 +61,7 @@ fun Lamp(on: Boolean = false, toggle: (Boolean) -> Unit = {}) {
             contentDescription = "Lamp",
             modifier=Modifier.background(Color.Blue)
         )
-        Switch(checked = false, onCheckedChange = toggle )
+        Switch(checked = on, onCheckedChange = toggle )
     }
 }
 
