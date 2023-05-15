@@ -1,5 +1,6 @@
 package com.example.android_iot_app_deel_2
 
+import android.content.Context
 import android.os.Bundle
 import android.os.Debug
 import android.util.Log
@@ -21,17 +22,51 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.lifecycle.ViewModelProvider
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.lifecycleScope
 import com.example.android_iot_app_deel_2.ui.theme.Android_IoT_App_Deel_2Theme
-import java.io.Console
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.edit
 
 class MainActivity : ComponentActivity() {
+
+    private val USER_PREFERENCES_NAME = "user_preferences"
+    private val LAMP1_ON_KEY = "lamp1_on"
+
+    val dataStore by preferencesDataStore(name = USER_PREFERENCES_NAME)
+
+    val LAMP1_ON = booleanPreferencesKey(LAMP1_ON_KEY)
+
+    suspend fun saveLamp1State(on: Boolean) {
+        dataStore.edit { settings ->
+            settings[LAMP1_ON] = on
+        }
+    }
 
     lateinit var viewModel: MainViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModel = ViewModelProvider(this, MainViewModelFactory(true)).get(MainViewModel::class.java)
+        val lamp1OnFlow: Flow<Boolean> = dataStore.data
+            .map { preferences ->
+                // No type safety.
+                preferences[LAMP1_ON] ?: true
+            }
+
+        var lamp1On=false
+        runBlocking {
+            lamp1On = lamp1OnFlow.first()
+        }
+
+        viewModel = ViewModelProvider(this, MainViewModelFactory(lamp1On)).get(MainViewModel::class.java)
 
         setContent {
             Android_IoT_App_Deel_2Theme {
@@ -47,6 +82,9 @@ class MainActivity : ComponentActivity() {
                         })
                         Lamp()
                         Lamp()
+                        Button(onClick =  { lifecycleScope.launch { saveLamp1State(viewModel.lamp1_on.value) }}) {
+                            Text("Save")
+                        }
                     }
                 }
             }
